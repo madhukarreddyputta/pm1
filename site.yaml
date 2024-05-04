@@ -1,0 +1,48 @@
+---
+- hosts: all
+  gather_facts: yes
+  become: yes
+  tasks:
+    - name: Update package cache
+      apt:
+        update_cache: yes
+
+    - name: Upgrade packages
+      apt:
+        upgrade: yes
+        autoremove: yes
+        autoclean: yes
+
+- hosts: webservers
+  tasks:
+    - name: Retrieve IP addresses for dev servers
+      ansible.builtin.setup:
+        gather_subset:
+          - network
+
+    - name: Generate HAProxy configuration
+      template:
+        src: haproxy.cfg.j2
+        dest: /etc/haproxy/haproxy.cfg
+      notify: Restart HAProxy
+
+- hosts: HAproxy
+  become: yes
+  become_method: sudo
+  tasks:
+    - name: HAproxy Update
+      apt:
+        update_cache: yes
+
+    - name: Install HAproxy
+      apt:
+        name: haproxy
+        state: latest
+      notify: Restart HAProxy
+
+handlers:
+  - name: Restart HAProxy
+    service:
+      name: haproxy
+      state: restarted
+
