@@ -1,3 +1,4 @@
+---
 - hosts: all
   gather_facts: yes
   become: yes
@@ -8,10 +9,11 @@
 
     - name: Upgrade packages
       apt:
-        upgrade: yes
+        upgrade: dist
         autoremove: yes
         autoclean: yes
-#installs and configures haproxy
+
+# Installs and configures HAproxy on HAproxy servers
 - hosts: HAproxy
   become: yes
   become_method: sudo
@@ -27,56 +29,56 @@
 
     - name: Configure HAproxy
       template:
-        src: haproxy.cfg
+        src: haproxy.cfg.j2
         dest: /etc/haproxy/haproxy.cfg
+      notify: Restart HAproxy
 
-    - name: Restart HAproxy
-      become: yes
+    - name: Ensure HAproxy is enabled and running
       service:
         name: haproxy
-        state: restarted
+        state: started
+        enabled: yes
 
-# Deploys and tests the flask app on webservers
+# Deploys and tests the Flask application on web servers
 - hosts: webservers
   become: yes
   become_method: sudo
   tasks:
-
     - name: Webservers update
       apt:
         update_cache: yes
 
-    - name: install python3-pip
+    - name: Install python3-pip
       apt:
         name: python3-pip
         state: latest
-        update_cache: yes
 
-    - name: flask installation
+    - name: Flask installation
       pip:
         name: flask
         state: latest
 
-    - name: install Gunicorn
+    - name: Install Gunicorn
       apt:
         name: gunicorn
+        state: latest
 
-    - name: copy the flask app code to the servers
+    - name: Copy the Flask app code to the servers
       copy:
-        src:  /$PWD/application2.py
+        src: ./application2.py
         dest: /home/ubuntu/application2.py
         owner: ubuntu
+        group: ubuntu
         mode: '0644'
 
-    - name: Running Flask application #Execute the flask app
-      shell: gunicorn -w 2 -D -b 0.0.0.0:7000 application2:app
+    - name: Running Flask application
+      shell: cd /home/ubuntu && gunicorn -w 2 -D -b 0.0.0.0:7000 application2:app
+      async: 15
+      poll: 0
 
-- hosts: HAproxy
-  become: yes
-  become_method: sudo
-  tasks:
-    - name: Restart HAproxy
-      become: yes
-      service:
-            name: haproxy
-            state: restarted
+handlers:
+  - name: Restart HAproxy
+    become: yes
+    service:
+      name: haproxy
+      state: restarted
