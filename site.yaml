@@ -27,8 +27,10 @@
       template:
         src: haproxy.cfg.j2
         dest: /etc/haproxy/haproxy.cfg
-      notify:
-        - Restart HAproxy
+    - name: Restart HAproxy
+      service:
+        name: haproxy
+        state: restarted
     - name: Ensure HAproxy is enabled and running
       service:
         name: haproxy
@@ -65,10 +67,3 @@
       shell: cd /home/ubuntu && gunicorn -w 2 -D -b 0.0.0.0:7000 application2:app
       async: 15
       poll: 0
-
-handlers:
-  - name: Restart HAproxy
-    become: yes
-    service:
-      name: haproxy
-      state: restarted
