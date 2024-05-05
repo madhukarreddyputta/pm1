@@ -1,7 +1,7 @@
 [HAproxy]  
 HAproxy 
 [webservers]  
-devA  
+  
 devB  
 devC  
  
