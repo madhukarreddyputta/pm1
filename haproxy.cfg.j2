@@ -45,7 +45,7 @@ backend web-backend
     option forwardfor
 
     {% for server in groups['webservers'] %}
-    server {{ server }} {{ hostvars[server]["ansible_default_ipv4"]["address"] }}:5000 
+    server {{ server }} {{ hostvars[server]["ansible_default_ipv4"]["address"] }}:7000 
     {% endfor %}
 
 
