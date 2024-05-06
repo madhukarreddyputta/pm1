@@ -1,4 +1,3 @@
----
 - hosts: all
   gather_facts: yes
   become: yes
@@ -12,7 +11,7 @@
         upgrade: yes
         autoremove: yes
         autoclean: yes
-
+#installs and configures haproxy
 - hosts: HAproxy
   become: yes
   become_method: sudo
@@ -26,10 +25,23 @@
         name: haproxy
         state: latest
 
+    - name: Configure HAproxy
+      template:
+        src: haproxy.cfg.j2
+        dest: /etc/haproxy/haproxy.cfg
+
+    - name: Restart HAproxy
+      become: yes
+      service:
+        name: haproxy
+        state: restarted
+
+# Deploys and tests the flask app on webservers
 - hosts: webservers
   become: yes
   become_method: sudo
   tasks:
+
     - name: Webservers update
       apt:
         update_cache: yes
@@ -51,50 +63,20 @@
 
     - name: copy the flask app code to the servers
       copy:
-        src: /$PWD/application2.py
+        src:  /$PWD/application2.py
         dest: /home/ubuntu/application2.py
         owner: ubuntu
         mode: '0644'
 
-    - name: Running Flask application
+    - name: Running Flask application #Execute the flask app
       shell: gunicorn -w 2 -D -b 0.0.0.0:5000 application2:app
 
-- name: Retrieve and Configure HAProxy with Web Server IPs
-  hosts: HAproxy
+- hosts: HAproxy
   become: yes
+  become_method: sudo
   tasks:
-    - name: Retrieve IP addresses of web servers
-      add_host:
-        name: "{{ item }}"
-        groups: web_server_ips
-      with_items: "{{ groups['webservers'] }}"
-
-    - name: Template HAProxy configuration with retrieved IPs
-      template:
-        src: haproxy.cfg.j2
-        dest: /etc/haproxy/haproxy.cfg
-      notify: Restart HAProxy
-
-  handlers:
-    - name: Restart HAProxy
+    - name: Restart HAproxy
+      become: yes
       service:
-        name: haproxy
-        state: restarted
-
-- name: Deploy Application and Configure HAProxy
-  hosts: localhost
-  gather_facts: no
-  tasks:
-    - name: Gather Facts
-      setup:
-
-    - name: Update package cache
-      apt:
-        update_cache: yes
-      become: yes
-
-    - name: Upgrade packages
-      apt:
-        upgrade: dist
-        update_cache: yes
-      become: yes
+            name: haproxy
+            state: restarted
