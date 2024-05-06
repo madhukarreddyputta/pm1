@@ -25,7 +25,7 @@
         state: latest
     - name: Configure HAproxy
       template:
-        src: haproxy.cfg
+        src: haproxy.cfg.j2
         dest: /etc/haproxy/haproxy.cfg
     - name: Restart HAproxy
       service:
