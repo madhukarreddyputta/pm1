@@ -6,9 +6,10 @@
     - name: Update package cache
       apt:
         update_cache: yes
+
     - name: Upgrade packages
       apt:
-        upgrade: dist
+        upgrade: yes
         autoremove: yes
         autoclean: yes
 
@@ -19,23 +20,11 @@
     - name: HAproxy Update
       apt:
         update_cache: yes
+
     - name: Install HAproxy
       apt:
         name: haproxy
         state: latest
-    - name: Configure HAproxy
-      template:
-        src: haproxy.cfg.j2
-        dest: /etc/haproxy/haproxy.cfg
-    - name: Restart HAproxy
-      service:
-        name: haproxy
-        state: restarted
-    - name: Ensure HAproxy is enabled and running
-      service:
-        name: haproxy
-        state: started
-        enabled: yes
 
 - hosts: webservers
   become: yes
@@ -44,26 +33,68 @@
     - name: Webservers update
       apt:
         update_cache: yes
-    - name: Install python3-pip
+
+    - name: install python3-pip
       apt:
         name: python3-pip
         state: latest
-    - name: Flask installation
+        update_cache: yes
+
+    - name: flask installation
       pip:
         name: flask
         state: latest
-    - name: Install Gunicorn
+
+    - name: install Gunicorn
       apt:
         name: gunicorn
-        state: latest
-    - name: Copy the Flask app code to the servers
+
+    - name: copy the flask app code to the servers
       copy:
-        src: ./application2.py
+        src: /$PWD/application2.py
         dest: /home/ubuntu/application2.py
         owner: ubuntu
-        group: ubuntu
         mode: '0644'
+
     - name: Running Flask application
-      shell: cd /home/ubuntu && gunicorn -w 2 -D -b 0.0.0.0:5000 application2:app
-      async: 15
-      poll: 0
+      shell: gunicorn -w 2 -D -b 0.0.0.0:5000 application2:app
+
+- name: Retrieve and Configure HAProxy with Web Server IPs
+  hosts: HAproxy
+  become: yes
+  tasks:
+    - name: Retrieve IP addresses of web servers
+      add_host:
+        name: "{{ item }}"
+        groups: web_server_ips
+      with_items: "{{ groups['webservers'] }}"
+
+    - name: Template HAProxy configuration with retrieved IPs
+      template:
+        src: haproxy.cfg.j2
+        dest: /etc/haproxy/haproxy.cfg
+      notify: Restart HAProxy
+
+  handlers:
+    - name: Restart HAProxy
+      service:
+        name: haproxy
+        state: restarted
+
+- name: Deploy Application and Configure HAProxy
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Gather Facts
+      setup:
+
+    - name: Update package cache
+      apt:
+        update_cache: yes
+      become: yes
+
+    - name: Upgrade packages
+      apt:
+        upgrade: dist
+        update_cache: yes
+      become: yes
