@@ -64,6 +64,6 @@
         group: ubuntu
         mode: '0644'
     - name: Running Flask application
-      shell: cd /home/ubuntu && gunicorn -w 2 -D -b 0.0.0.0:7000 application2:app
+      shell: cd /home/ubuntu && gunicorn -w 2 -D -b 0.0.0.0:5000 application2:app
       async: 15
       poll: 0
