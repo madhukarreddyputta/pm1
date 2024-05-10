@@ -44,9 +44,9 @@ backend web-backend
     mode http
     option forwardfor
 
-    {% for server in groups['webservers'] %}
+   {% for server in groups['webservers'] %}
     server {{ server }} {{ hostvars[server]["ansible_default_ipv4"]["address"] }}:7000
-    {% endfor %}
+   {% endfor %}
 
 
 listen stats
