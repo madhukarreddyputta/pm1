@@ -16,3 +16,5 @@ export FLASK_RUN_HOST=localhost
 export FLASK_RUN_PORT=8210
 flask run
 
+student:mapu22@student.bth.se
+This repository contains all the files required for the assignment2 automation with ansible
